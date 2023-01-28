@@ -23,6 +23,7 @@ import pathlib
 import os
 import glob
 import time
+import datetime
 import re
 import exif
 import argparse
@@ -33,7 +34,10 @@ def rename_file_inplace(src, new_name, dry_run=False, verbose=True):
         print(f'    -> {src}')
         print(f'    -> {os.path.join(src.parent, new_name)}')
     if not dry_run:
-        os.rename(src, os.path.join(src.parent, new_name))
+        try:
+            os.rename(src, os.path.join(src.parent, new_name))
+        except:
+            print('RENAME FAILED')
 
 
 def main(args):
@@ -41,18 +45,16 @@ def main(args):
     re_filedate = re.compile(r'^\d{4}-\d{2}-\d{2}-\d{6}')
 
     # matches typical names of messenger media files (WA)
-    re_date0 = re.compile(r'^(IMG|VID|AUD|PTT)-(\d{8})-WA')
+    re_date1 = re.compile(r'^(IMG|VID|AUD|PTT)-(\d{8})-WA')
 
-    # matches filenames containing 10 isolated digits
-    # might indicate unix timestamp after 2001-09-09-014640
-    # todo: NOT IMPLEMENTED
-    re_date1 = re.compile(r'(\D|^)(\d{10})\D')
-
-    # matches filenames containing date, like this:
-    # 2017-01-01_15-03-27_image.jpg
-    # todo: NOT IMPLEMENTED
+    # matches filenames containing date, like these:
+    #            2017-01-01_15-03-27_image.jpg
+    # Screenshot_2015-09-23-21-46-27.png
+    #            2012-05-01_15-03-27_652.jpg
+    #       C360_2012-05-01 15-03-27.jpg
+    #       2010-07-30 19.55.42_e0.jpg
     re_date2 = re.compile(
-        r'(\D|^)(\d{4})-(\d{2})-(\d{2})(_|-)(\d{2})-(\d{2})-(\d{2})\D')
+        r'(\D|^)(\d{4}-\d{2}-\d{2})(_|-|\s)(\d{2})(-|\.)(\d{2})(-|\.)(\d{2})\D')
 
     # matches filenames containing date, like these:
     # IMG_20210101_140216.jpg
@@ -60,23 +62,41 @@ def main(args):
     # Screenshot_20201001-220605.png
     re_date3 = re.compile(r'(\D|^)(\d{8})(_|-)(\d{9}|\d{6})\D')
 
+    # matches filenames containing date, like these:
+    # 02-10-07_1659.jpg
+    # 18-07-07_0953.JPG
+    re_date4 = re.compile(r'^(\d{2})-(\d{2})-(\d{2})_(\d{4})\.(jpg|JPG)$')
+
+    # 10 or 13 isolated digits might indicate unix timestamp
+    # after 2001-09-09, in seconds (10 digits) or milliseconds (13 digits)
+    re_date5 = re.compile(r'(\D|^)(\d{10}|\d{13})(\D|$)')
+
+    # 14 or 17 isolated digits might indicate adjacent date information
+    # like 20010501221015 (seconds) or 20010501221015123 (milliseconds)
+    # the order is asumed to be like in the examples
+    re_date6 = re.compile(r'(\D|^)(\d{14}|\d{17})(\D|$)')
+
     # matches files that are skipped
     re_skiplist = re.compile(r'^(Thumbs\.db)$')
 
     # counters for report
     num_glob_items = 0
     num_skipped_items = 0
+    num_skipped_dirs = 0
+    num_exif_used = 0
+    num_modified_date_used = 0
     for f in glob.glob(os.path.join(os.getcwd(), args.file_pattern), recursive=True):
-        num_glob_items += 1
-
         print(f'{f}')
 
         fp = pathlib.Path(f)
 
         # skip directories
         if os.path.isdir(fp):
+            num_skipped_dirs += 1
             print('    -> SKIP DIRECTORY')
             continue
+
+        num_glob_items += 1
 
         # skip filenames in skiplist
         # skip files that already start with YYYY-MM-DD-hhmmss
@@ -87,21 +107,20 @@ def main(args):
             continue
 
         # date from EXIF data
-        if fp.suffix in ['.jpg', '.jpeg', '.jpe', '.jif', '.jfif', '.jfi']:
+        if (not args.noexif) and fp.suffix.lower() in ['.jpg', '.jpeg', '.jpe', '.jif', '.jfif', '.jfi']:
             file_name_new = ''
             with open(fp, 'rb') as img_file:
                 try:
                     img = exif.Image(img_file)
                     if img.has_exif and hasattr(img, "datetime_original"):
-
-                        # todo try except
+                        num_exif_used += 1
                         # convert format from exif (YYYY:MM:DD hh:mm:ss) to YYYY-MM-DD-hhmmss
                         exif_time_struct = time.strptime(
                             img.datetime_original, '%Y:%m:%d %H:%M:%S')
                         exif_time_str = time.strftime(
                             '%Y-%m-%d-%H%M%S', exif_time_struct)
 
-                        file_name_new = f'{exif_time_str}_{fp.stem}{fp.suffix}'
+                        file_name_new = f'{exif_time_str}_{fp.name}'
                         print('    -> USING DATE FROM EXIF DATA')
                 except:
                     print('    -> FAILED TO LOAD EXIF DATA')
@@ -111,11 +130,20 @@ def main(args):
                 continue
 
         # date from messenger filename
-        re_matches = re.search(re_date0, fp.name)
+        re_matches = re.search(re_date1, fp.name)
         if re_matches != None:
             time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-000000'
-            file_name_new = f'{time_str}_{fp.stem}{fp.suffix}'
+            file_name_new = f'{time_str}_{fp.name}'
             print('    -> USING DATE FROM FILENAME (MESSENGER)')
+            rename_file_inplace(fp, file_name_new, args.dry)
+            continue
+
+        # date from filename (re_date2)
+        re_matches = re.search(re_date2, fp.name)
+        if re_matches != None:
+            time_str = f'{re_matches[2]}-{re_matches[4]}{re_matches[6]}{re_matches[8]}'
+            file_name_new = f'{time_str}_{fp.name}'
+            print('    -> USING DATE FROM FILENAME (2)')
             rename_file_inplace(fp, file_name_new, args.dry)
             continue
 
@@ -123,23 +151,58 @@ def main(args):
         re_matches = re.search(re_date3, fp.name)
         if re_matches != None:
             time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[4][0:6]}'
-            file_name_new = f'{time_str}_{fp.stem}{fp.suffix}'
-            print('    -> USING DATE FROM FILENAME')
+            file_name_new = f'{time_str}_{fp.name}'
+            print('    -> USING DATE FROM FILENAME (3)')
+            rename_file_inplace(fp, file_name_new, args.dry)
+            continue
+
+        # date from filename (re_date4)
+        re_matches = re.search(re_date4, fp.name)
+        if re_matches != None:
+            # 2-digit year is prefixed with 20 (07 -> 2007)
+            time_str = f'20{re_matches[3]}-{re_matches[2]}-{re_matches[1]}-{re_matches[4]}00'
+            file_name_new = f'{time_str}_{fp.name}'
+            print('    -> USING DATE FROM FILENAME (4)')
+            rename_file_inplace(fp, file_name_new, args.dry)
+            continue
+
+        # date from filename (re_date5)
+        re_matches = re.search(re_date5, fp.name)
+        if re_matches != None:
+            # convert assumed timestamp to UTC time (we don't know it better)
+            dt = datetime.datetime.utcfromtimestamp(int(re_matches[2][:10]))
+            time_str = dt.strftime("%Y-%m-%d-%H%M%S")
+            file_name_new = f'{time_str}_{fp.name}'
+            print('    -> USING DATE FROM FILENAME (5)')
+            rename_file_inplace(fp, file_name_new, args.dry)
+            continue
+
+        # date from filename (re_date6)
+        re_matches = re.search(re_date6, fp.name)
+        if re_matches != None:
+            time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[2][8:14]}'
+            file_name_new = f'{time_str}_{fp.name}'
+            print('    -> USING DATE FROM FILENAME (6)')
             rename_file_inplace(fp, file_name_new, args.dry)
             continue
 
         # date from last modified date (fallback)
+        num_modified_date_used += 1
         mtime = os.path.getmtime(fp)
         # file modified struct_time
         mtime_struct = time.gmtime(mtime)
         # file modified time string
         mtime_str = time.strftime('%Y-%m-%d-%H%M%S', mtime_struct)
-        file_name_new = f'{mtime_str}_{fp.stem}{fp.suffix}'
+        file_name_new = f'{mtime_str}_{fp.name}'
         print('    -> USING FILE MODIFIED DATE')
         rename_file_inplace(fp, file_name_new, args.dry)
 
     # report
-    print(f'{num_glob_items} items, {num_skipped_items} skipped, {num_glob_items-num_skipped_items} processed')
+    print(f'{num_glob_items} items, {num_skipped_items} skipped, {num_glob_items-num_skipped_items} processed ({num_skipped_dirs} directories)')
+    print(f'EXIF date used:     {num_exif_used}')
+    print(f'modified date used: {num_modified_date_used}')
+    print(
+        f'other date used:    {num_glob_items-num_skipped_items-num_exif_used-num_modified_date_used}')
 
 
 if __name__ == "__main__":
@@ -148,6 +211,8 @@ if __name__ == "__main__":
                        help='target directory. use \'.\' for in-place rename. NOT IMPLEMENTED')
     aPars.add_argument("file_pattern", type=str,
                        help='file pattern. base is cwd. use \'**/*\' for all files recursive')
+    aPars.add_argument('--noexif', action='store_true',
+                       help='do not use exif data at all')
     aPars.add_argument('--dry', action='store_true',
                        help='perform a dry-run only')
     args = aPars.parse_args()
