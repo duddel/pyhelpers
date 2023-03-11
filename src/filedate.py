@@ -106,9 +106,12 @@ def main(args):
             print('    -> SKIP')
             continue
 
+        file_name_new = None
+
         # date from EXIF data
-        if (not args.noexif) and fp.suffix.lower() in ['.jpg', '.jpeg', '.jpe', '.jif', '.jfif', '.jfi']:
-            file_name_new = ''
+        if (not file_name_new) and \
+            (not args.noexif) and \
+                fp.suffix.lower() in ['.jpg', '.jpeg', '.jpe', '.jif', '.jfif', '.jfi']:
             with open(fp, 'rb') as img_file:
                 try:
                     img = exif.Image(img_file)
@@ -125,77 +128,72 @@ def main(args):
                 except:
                     print('    -> FAILED TO LOAD EXIF DATA')
 
-            if file_name_new != '':
-                rename_file_inplace(fp, file_name_new, args.dry)
-                continue
-
         # date from messenger filename
-        re_matches = re.search(re_date1, fp.name)
-        if re_matches != None:
-            time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-000000'
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (MESSENGER)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date1, fp.name)
+            if re_matches != None:
+                time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-000000'
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (MESSENGER)')
 
         # date from filename (re_date2)
-        re_matches = re.search(re_date2, fp.name)
-        if re_matches != None:
-            time_str = f'{re_matches[2]}-{re_matches[4]}{re_matches[6]}{re_matches[8]}'
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (2)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date2, fp.name)
+            if re_matches != None:
+                time_str = f'{re_matches[2]}-{re_matches[4]}{re_matches[6]}{re_matches[8]}'
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (2)')
 
         # date from filename (re_date3)
-        re_matches = re.search(re_date3, fp.name)
-        if re_matches != None:
-            time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[4][0:6]}'
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (3)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date3, fp.name)
+            if re_matches != None:
+                time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[4][0:6]}'
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (3)')
 
         # date from filename (re_date4)
-        re_matches = re.search(re_date4, fp.name)
-        if re_matches != None:
-            # 2-digit year is prefixed with 20 (07 -> 2007)
-            time_str = f'20{re_matches[3]}-{re_matches[2]}-{re_matches[1]}-{re_matches[4]}00'
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (4)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date4, fp.name)
+            if re_matches != None:
+                # 2-digit year is prefixed with 20 (07 -> 2007)
+                time_str = f'20{re_matches[3]}-{re_matches[2]}-{re_matches[1]}-{re_matches[4]}00'
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (4)')
 
         # date from filename (re_date5)
-        re_matches = re.search(re_date5, fp.name)
-        if re_matches != None:
-            # convert assumed timestamp to UTC time (we don't know it better)
-            dt = datetime.datetime.utcfromtimestamp(int(re_matches[2][:10]))
-            time_str = dt.strftime("%Y-%m-%d-%H%M%S")
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (5)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date5, fp.name)
+            if re_matches != None:
+                # convert assumed timestamp to UTC time (we don't know it better)
+                dt = datetime.datetime.utcfromtimestamp(
+                    int(re_matches[2][:10]))
+                time_str = dt.strftime("%Y-%m-%d-%H%M%S")
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (5)')
 
         # date from filename (re_date6)
-        re_matches = re.search(re_date6, fp.name)
-        if re_matches != None:
-            time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[2][8:14]}'
-            file_name_new = f'{time_str}_{fp.name}'
-            print('    -> USING DATE FROM FILENAME (6)')
-            rename_file_inplace(fp, file_name_new, args.dry)
-            continue
+        if not file_name_new:
+            re_matches = re.search(re_date6, fp.name)
+            if re_matches != None:
+                time_str = f'{re_matches[2][0:4]}-{re_matches[2][4:6]}-{re_matches[2][6:8]}-{re_matches[2][8:14]}'
+                file_name_new = f'{time_str}_{fp.name}'
+                print('    -> USING DATE FROM FILENAME (6)')
 
         # date from last modified date (fallback)
-        num_modified_date_used += 1
-        mtime = os.path.getmtime(fp)
-        # file modified struct_time
-        mtime_struct = time.gmtime(mtime)
-        # file modified time string
-        mtime_str = time.strftime('%Y-%m-%d-%H%M%S', mtime_struct)
-        file_name_new = f'{mtime_str}_{fp.name}'
-        print('    -> USING FILE MODIFIED DATE')
-        rename_file_inplace(fp, file_name_new, args.dry)
+        if not file_name_new:
+            num_modified_date_used += 1
+            mtime = os.path.getmtime(fp)
+            # file modified struct_time
+            mtime_struct = time.gmtime(mtime)
+            # file modified time string
+            mtime_str = time.strftime('%Y-%m-%d-%H%M%S', mtime_struct)
+            file_name_new = f'{mtime_str}_{fp.name}'
+            print('    -> USING FILE MODIFIED DATE')
+
+        # perform the actual rename
+        if file_name_new:
+            rename_file_inplace(fp, file_name_new, args.dry)
 
     # report
     print(f'{num_glob_items} items, {num_skipped_items} skipped, {num_glob_items-num_skipped_items} processed ({num_skipped_dirs} directories)')

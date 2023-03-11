@@ -1,0 +1,5 @@
+# filedate
+exif~=1.6
+
+# sameimg
+imagededup~=0.3
