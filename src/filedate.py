@@ -204,7 +204,10 @@ def main(args):
 
 
 if __name__ == "__main__":
-    aPars = argparse.ArgumentParser(description="")
+    aPars = argparse.ArgumentParser(description="Renames files by prepending YYYY-MM-DD-hhmmss_ NO MATTER WHAT,\n\
+using different criteria, such as parsing date/time from the\n\
+original filename, reading exif data or using the file modification date.",
+                                    formatter_class=argparse.RawTextHelpFormatter)
     aPars.add_argument("target_dir", type=str,
                        help='target directory. use \'.\' for in-place rename. NOT IMPLEMENTED')
     aPars.add_argument("file_pattern", type=str,
