@@ -1,2 +1,5 @@
 # filedate
 exif~=1.6
+
+# importmedia
+psutil~=5.9
