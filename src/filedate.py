@@ -87,7 +87,7 @@ def rename_file_inplace(src, new_name, dry_run=False, verbose=True):
             print('RENAME FAILED')
 
 
-def get_new_filename(fp, noexif):
+def get_new_filename(fp, noexif = False):
     file_name_new = None
     strategy = NewNameStrategy.UNSPECIFIED
 

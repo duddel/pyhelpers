@@ -19,18 +19,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
-import psutil
+import pathlib
 import glob
+import os
 import argparse
+import filedate
 
 
 def main(args):
-    for p in psutil.disk_partitions():
-        print(f"{p.mountpoint} ({p.opts, {p.fstype}})")
+    target_dir = os.getcwd()
+
+    source_files_search_path = os.path.join(args.source_dir, args.file_pattern)
+
+    source_files = glob.glob(source_files_search_path, recursive=True)
+
+    for f in source_files:
+        fp = pathlib.Path(f)
+        print(f"{fp}")
+
+        # check if file with new_name exists under target_dir
+        # optionally compare size or hash
+        # do not copy if it exists already
+        # also, never overwrite (only if requested by user arg)
+
+        # add args: force_copy/force_overwrite, subdir_y/ym/ymd
+
+        new_name = filedate.get_new_filename(fp)[0]
+        print(f"    -> {os.path.join(target_dir, new_name)}")
 
 
 if __name__ == "__main__":
-    aPars = argparse.ArgumentParser(description="")
+    aPars = argparse.ArgumentParser(
+        description="Imports media", formatter_class=argparse.RawTextHelpFormatter)
+    aPars.add_argument("source_dir", type=pathlib.Path,
+                       help='source directory')
+    aPars.add_argument("file_pattern", type=str,
+                       help='file pattern. use \'**/*\' for all files recursive')
+    aPars.add_argument('--dry', action='store_true',
+                       help='perform a dry-run only')
     args = aPars.parse_args()
 
     main(args)

@@ -28,6 +28,11 @@ options:
   --dry         perform a dry-run only
 ```
 
+## listpar.py
+```
+> python -m listpar
+```
+
 ## License
 
 The source code in this repository is licensed under the [MIT license](LICENSE.txt).
