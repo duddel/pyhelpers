@@ -9,6 +9,7 @@
 - Call script like so: `python -m <script_name>`
 
 ## filedate.py
+
 ```
 > python -m filedate --help
 
@@ -28,9 +29,26 @@ options:
   --dry         perform a dry-run only
 ```
 
-## listpar.py
+## treesum
+
 ```
-> python -m listpar
+> python -m treesum --help
+
+usage: treesum.py [-h] [-left LEFT] [-right RIGHT] command
+
+Tool for hash based, recursive, directory comparison.
+Answers the question: which files in LEFT directory are (based on hash) also present in RIGHT directory,
+even if moved or renamed?
+  list: Creates a treesum list file containing all hashes of all files in cwd, recursively
+  compare: use -left and -right args to compare 2 list files
+
+positional arguments:
+  command       Command to execute: [list, compare]
+
+options:
+  -h, --help    show this help message and exit
+  -left LEFT    Left side for comparison [compare]. If directory, latest list file is used. Defaults to cwd.
+  -right RIGHT  Right side for comparison [compare]. If directory, latest list file is used.
 ```
 
 ## License
