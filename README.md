@@ -51,6 +51,19 @@ options:
   -right RIGHT  Right side for comparison [compare]. If directory, latest list file is used.
 ```
 
+## videothumb
+
+```
+> python -m videothumb --help
+usage: videothumb.py [-h]
+
+Generates video preview images for all video files, recursively in cwd
+see: https://github.com/hhtznr/pyvideothumbnailer
+
+options:
+  -h, --help  show this help message and exit
+```
+
 ## License
 
 The source code in this repository is licensed under the [MIT license](LICENSE.txt).

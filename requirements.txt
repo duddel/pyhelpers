@@ -3,3 +3,15 @@ exif~=1.6
 
 # importmedia
 psutil~=5.9
+
+# pigeon
+gitpython~=3.1
+ftputil~=5.1
+
+# tablefix
+pandas~=2.2
+odfpy~=1.4
+xlsxwriter~=3.2
+
+# videothumb
+pyvideothumbnailer~=2.1

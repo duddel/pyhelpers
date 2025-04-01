@@ -1,5 +1,4 @@
-MIT License
-
+'''
 Copyright (c) 2025 Alexander Scholz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,3 +18,26 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+'''
+import subprocess
+import argparse
+
+def main():
+    subprocess.run(["pyvideothumbnailer",
+                    "--recursive",
+                    "--width", "4000",
+                    "--columns", "4",
+                    "--rows", "4",
+                    "--vertical-video-columns", "5",
+                    "--vertical-video-rows", "3",
+                    "--skip-seconds", "1"
+                    ])
+
+
+if __name__ == "__main__":
+    aPars = argparse.ArgumentParser(description="Generates video preview images for all video files, recursively in cwd\n\
+see: https://github.com/hhtznr/pyvideothumbnailer",
+                                    formatter_class=argparse.RawTextHelpFormatter)
+    args = aPars.parse_args()
+
+    main()
